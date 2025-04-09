@@ -1,0 +1,90 @@
+<h1>景點觀光展覽資訊   <label>搜尋名稱：<input type="text" id="searchInput" style="width: 300px; height: 30px;"></label>
+</h1>
+<table id="csie">
+  <thead>
+    <tr>
+      <th>標題</th>
+      <th>地點</th>
+      <th>票價</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+<div id="pagination">
+  <button id="prevBtn">上一頁</button>
+  <span id="pageInfo"></span>
+  <button id="nextBtn">下一頁</button>
+  <button onclick="delOldData ()">delOldData</button>
+</div>
+<script>
+const openUrl = "https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindTypeJ&category=6";
+const xhr = new XMLHttpRequest();
+xhr.open('GET', openUrl, true);
+xhr.send();
+
+let fullDataset = [];
+let filteredDataset = [];
+let currentPage = 1;
+const pageSize = 10;
+
+xhr.onreadystatechange = function () {
+  if (this.readyState === 4 && this.status === 200) {
+    fullDataset = JSON.parse(this.responseText);
+    filteredDataset = fullDataset;
+    renderTable();
+    updatePagination();
+  }
+};
+
+function renderTable() {
+  const tableBody = document.querySelector("#csie tbody");
+  tableBody.innerHTML = "";
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const pageData = filteredDataset.slice(startIndex, startIndex + pageSize);
+
+  pageData.forEach(data => {
+    const row = tableBody.insertRow();
+    row.insertCell(0).innerHTML = data['title'];
+    row.insertCell(1).innerHTML = data['showInfo']?.[0]?.['location'] || 'N/A';
+    row.insertCell(2).innerHTML = data['showInfo']?.[0]?.['price'] || 'N/A';
+  });
+}
+
+function updatePagination() {
+  const totalPages = Math.ceil(filteredDataset.length / pageSize);
+  document.getElementById("pageInfo").textContent = `第 ${currentPage} 頁 / 共 ${totalPages} 頁`;
+
+  document.getElementById("prevBtn").disabled = currentPage === 1;
+  document.getElementById("nextBtn").disabled = currentPage === totalPages || totalPages === 0;
+}
+
+document.getElementById("prevBtn").addEventListener("click", () => {
+  if (currentPage > 1) {
+    currentPage--;
+    renderTable();
+    updatePagination();
+  }
+});
+
+document.getElementById("nextBtn").addEventListener("click", () => {
+  const totalPages = Math.ceil(filteredDataset.length / pageSize);
+  if (currentPage < totalPages) {
+    currentPage++;
+    renderTable();
+    updatePagination();
+  }
+});
+
+document.getElementById("searchInput").addEventListener("change", function () {
+  const keyword = this.value.trim().toLowerCase();
+
+  filteredDataset = fullDataset.filter(data =>
+    data.title.toLowerCase().includes(keyword)
+  );
+
+  currentPage = 1; 
+  renderTable();
+  updatePagination();
+});
+</script>
